@@ -1,5 +1,6 @@
 /*************************************************************************
- * Copyright (c) 2015-2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2015-2020, NVIDIA CORPORATION. All rights reserved.
+ * Modifications Copyright (c) 2019-2020 Advanced Micro Devices, Inc. All rights reserved.
  *
  * See LICENSE.txt for license information
  ************************************************************************/
@@ -7,28 +8,32 @@
 #ifndef NCCL_H_
 #define NCCL_H_
 
-#include <cuda_runtime.h>
-#include <cuda_fp16.h>
+#include <hip/hip_runtime_api.h>
+#include <hip/hip_fp16.h>
 
 #define NCCL_MAJOR 2
 #define NCCL_MINOR 8
-#define NCCL_PATCH 3
-#define NCCL_SUFFIX "a0"
+#define NCCL_PATCH 4
+#define NCCL_SUFFIX ""
 
-#define NCCL_VERSION_CODE 2831
+#define NCCL_VERSION_CODE 2804
 #define NCCL_VERSION(X,Y,Z) ((X) * 1000 + (Y) * 100 + (Z))
+
+#define RCCL_BFLOAT16 1
+#define RCCL_GATHER_SCATTER 1
+#define RCCL_ALLTOALLV 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Opaque handle to communicator */
+/*! @brief Opaque handle to communicator */
 typedef struct ncclComm* ncclComm_t;
 
 #define NCCL_UNIQUE_ID_BYTES 128
 typedef struct { char internal[NCCL_UNIQUE_ID_BYTES]; } ncclUniqueId;
 
-/* Error type */
+/*! @brief Error type */
 typedef enum { ncclSuccess                 =  0,
                ncclUnhandledCudaError      =  1,
                ncclSystemError             =  2,
@@ -37,75 +42,92 @@ typedef enum { ncclSuccess                 =  0,
                ncclInvalidUsage            =  5,
                ncclNumResults              =  6 } ncclResult_t;
 
-/* Return the NCCL_VERSION_CODE of the NCCL library in the supplied integer.
- * This integer is coded with the MAJOR, MINOR and PATCH level of the
+/*! @brief Return the NCCL_VERSION_CODE of the NCCL library in the supplied integer.
+ *
+ * @details This integer is coded with the MAJOR, MINOR and PATCH level of the
  * NCCL library
  */
 ncclResult_t  ncclGetVersion(int *version);
 ncclResult_t pncclGetVersion(int *version);
 
-/* Generates an Id to be used in ncclCommInitRank. ncclGetUniqueId should be
- * called once and the Id should be distributed to all ranks in the
- * communicator before calling ncclCommInitRank. */
+/*! @brief Generates an ID for ncclCommInitRank
+
+    @details
+    Generates an ID to be used in ncclCommInitRank. ncclGetUniqueId should be
+    called once and the Id should be distributed to all ranks in the
+    communicator before calling ncclCommInitRank.
+
+    @param[in]
+    uniqueId     ncclUniqueId*
+                 pointer to uniqueId
+
+*/
 ncclResult_t  ncclGetUniqueId(ncclUniqueId* uniqueId);
 ncclResult_t pncclGetUniqueId(ncclUniqueId* uniqueId);
 
-/* Creates a new communicator (multi thread/process version).
- * rank must be between 0 and nranks-1 and unique within a communicator clique.
- * Each rank is associated to a CUDA device, which has to be set before calling
- * ncclCommInitRank.
- * ncclCommInitRank implicitly syncronizes with other ranks, so it must be
- * called by different threads/processes or use ncclGroupStart/ncclGroupEnd. */
+/*! @brief Creates a new communicator (multi thread/process version).
+
+    @details
+    rank must be between 0 and nranks-1 and unique within a communicator clique.
+    Each rank is associated to a CUDA device, which has to be set before calling
+    ncclCommInitRank.
+    ncclCommInitRank implicitly syncronizes with other ranks, so it must be
+    called by different threads/processes or use ncclGroupStart/ncclGroupEnd.
+
+    @param[in]
+    comm        ncclComm_t*
+                communicator struct pointer
+    */
 ncclResult_t  ncclCommInitRank(ncclComm_t* comm, int nranks, ncclUniqueId commId, int rank);
 ncclResult_t pncclCommInitRank(ncclComm_t* comm, int nranks, ncclUniqueId commId, int rank);
 
-/* Creates a clique of communicators (single process version).
- * This is a convenience function to create a single-process communicator clique.
+/*! @brief Creates a clique of communicators (single process version).
+ *
+ * @details This is a convenience function to create a single-process communicator clique.
  * Returns an array of ndev newly initialized communicators in comm.
  * comm should be pre-allocated with size at least ndev*sizeof(ncclComm_t).
- * If devlist is NULL, the first ndev CUDA devices are used.
- * Order of devlist defines user-order of processors within the communicator. */
+ * If devlist is NULL, the first ndev HIP devices are used.
+ * Order of devlist defines user-order of processors within the communicator.
+ * */
 ncclResult_t  ncclCommInitAll(ncclComm_t* comm, int ndev, const int* devlist);
 ncclResult_t pncclCommInitAll(ncclComm_t* comm, int ndev, const int* devlist);
 
-/* Frees resources associated with communicator object, but waits for any operations
- * that might still be running on the device. */
+ /*! @brief Frees resources associated with communicator object, but waits for any operations that might still be running on the device */
 ncclResult_t  ncclCommDestroy(ncclComm_t comm);
 ncclResult_t pncclCommDestroy(ncclComm_t comm);
 
-/* Frees resources associated with communicator object and aborts any operations
- * that might still be running on the device. */
+/*! @brief Frees resources associated with communicator object and aborts any operations that might still be running on the device. */
 ncclResult_t  ncclCommAbort(ncclComm_t comm);
 ncclResult_t pncclCommAbort(ncclComm_t comm);
 
-/* Returns a human-readable error message. */
+/*! @brief Returns a human-readable error message. */
 const char*  ncclGetErrorString(ncclResult_t result);
 const char* pncclGetErrorString(ncclResult_t result);
 
-/* Checks whether the comm has encountered any asynchronous errors */
+/*! @brief Checks whether the comm has encountered any asynchronous errors */
 ncclResult_t  ncclCommGetAsyncError(ncclComm_t comm, ncclResult_t *asyncError);
 ncclResult_t pncclCommGetAsyncError(ncclComm_t comm, ncclResult_t *asyncError);
 
-/* Gets the number of ranks in the communicator clique. */
+/*! @brief Gets the number of ranks in the communicator clique. */
 ncclResult_t  ncclCommCount(const ncclComm_t comm, int* count);
 ncclResult_t pncclCommCount(const ncclComm_t comm, int* count);
 
-/* Returns the cuda device number associated with the communicator. */
+/*! @brief Returns the rocm device number associated with the communicator. */
 ncclResult_t  ncclCommCuDevice(const ncclComm_t comm, int* device);
 ncclResult_t pncclCommCuDevice(const ncclComm_t comm, int* device);
 
-/* Returns the user-ordered "rank" associated with the communicator. */
+/*! @brief Returns the user-ordered "rank" associated with the communicator. */
 ncclResult_t  ncclCommUserRank(const ncclComm_t comm, int* rank);
 ncclResult_t pncclCommUserRank(const ncclComm_t comm, int* rank);
 
-/* Reduction operation selector */
+/*! @brief Reduction operation selector */
 typedef enum { ncclSum        = 0,
                ncclProd       = 1,
                ncclMax        = 2,
                ncclMin        = 3,
                ncclNumOps     = 4 } ncclRedOp_t;
 
-/* Data types */
+/*! @brief Data types */
 typedef enum { ncclInt8       = 0, ncclChar       = 0,
                ncclUint8      = 1,
                ncclInt32      = 2, ncclInt        = 2,
@@ -115,7 +137,8 @@ typedef enum { ncclInt8       = 0, ncclChar       = 0,
                ncclFloat16    = 6, ncclHalf       = 6,
                ncclFloat32    = 7, ncclFloat      = 7,
                ncclFloat64    = 8, ncclDouble     = 8,
-               ncclNumTypes   = 9 } ncclDataType_t;
+               ncclBfloat16   = 9,
+               ncclNumTypes   = 10 } ncclDataType_t;
 
 /*
  * Collective communication operations
@@ -130,10 +153,10 @@ typedef enum { ncclInt8       = 0, ncclChar       = 0,
  * below).
  */
 
-/*
- * Reduce
+/*!
+ * @brief Reduce
  *
- * Reduces data arrays of length count in sendbuff into recvbuff using op
+ * @details Reduces data arrays of length count in sendbuff into recvbuff using op
  * operation.
  * recvbuff may be NULL on all calls except for root device.
  * root is the rank (not the CUDA device) where data will reside after the
@@ -142,55 +165,52 @@ typedef enum { ncclInt8       = 0, ncclChar       = 0,
  * In-place operation will happen if sendbuff == recvbuff.
  */
 ncclResult_t  ncclReduce(const void* sendbuff, void* recvbuff, size_t count, ncclDataType_t datatype,
-    ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream);
+    ncclRedOp_t op, int root, ncclComm_t comm, hipStream_t stream);
 ncclResult_t pncclReduce(const void* sendbuff, void* recvbuff, size_t count, ncclDataType_t datatype,
-    ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream);
+    ncclRedOp_t op, int root, ncclComm_t comm, hipStream_t stream);
 
-/*
- * (deprecated) Broadcast (in-place)
+/*! @brief (deprecated) Broadcast (in-place)
  *
- * Copies count values from root to all other devices.
+ * @details Copies count values from root to all other devices.
  * root is the rank (not the CUDA device) where data resides before the
  * operation is started.
  *
  * This operation is implicitely in place.
  */
 ncclResult_t  ncclBcast(void* buff, size_t count, ncclDataType_t datatype, int root,
-    ncclComm_t comm, cudaStream_t stream);
+    ncclComm_t comm, hipStream_t stream);
 ncclResult_t pncclBcast(void* buff, size_t count, ncclDataType_t datatype, int root,
-    ncclComm_t comm, cudaStream_t stream);
+    ncclComm_t comm, hipStream_t stream);
 
-/*
- * Broadcast
+/*! @brief Broadcast
  *
- * Copies count values from root to all other devices.
- * root is the rank (not the CUDA device) where data resides before the
+ * @details Copies count values from root to all other devices.
+ * root is the rank (not the HIP device) where data resides before the
  * operation is started.
  *
  * In-place operation will happen if sendbuff == recvbuff.
  */
 ncclResult_t  ncclBroadcast(const void* sendbuff, void* recvbuff, size_t count, ncclDataType_t datatype, int root,
-    ncclComm_t comm, cudaStream_t stream);
+    ncclComm_t comm, hipStream_t stream);
 ncclResult_t pncclBroadcast(const void* sendbuff, void* recvbuff, size_t count, ncclDataType_t datatype, int root,
-    ncclComm_t comm, cudaStream_t stream);
+    ncclComm_t comm, hipStream_t stream);
 
-/*
- * All-Reduce
+/*! @brief All-Reduce
  *
- * Reduces data arrays of length count in sendbuff using op operation, and
+ * @details Reduces data arrays of length count in sendbuff using op operation, and
  * leaves identical copies of result on each recvbuff.
  *
  * In-place operation will happen if sendbuff == recvbuff.
  */
 ncclResult_t  ncclAllReduce(const void* sendbuff, void* recvbuff, size_t count,
-    ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm, cudaStream_t stream);
+    ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm, hipStream_t stream);
 ncclResult_t pncclAllReduce(const void* sendbuff, void* recvbuff, size_t count,
-    ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm, cudaStream_t stream);
+    ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm, hipStream_t stream);
 
-/*
- * Reduce-Scatter
+/*!
+ * @brief Reduce-Scatter
  *
- * Reduces data in sendbuff using op operation and leaves reduced result
+ * @details Reduces data in sendbuff using op operation and leaves reduced result
  * scattered over the devices so that recvbuff on rank i will contain the i-th
  * block of the result.
  * Assumes sendcount is equal to nranks*recvcount, which means that sendbuff
@@ -200,15 +220,14 @@ ncclResult_t pncclAllReduce(const void* sendbuff, void* recvbuff, size_t count,
  */
 ncclResult_t  ncclReduceScatter(const void* sendbuff, void* recvbuff,
     size_t recvcount, ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm,
-    cudaStream_t stream);
+    hipStream_t stream);
 ncclResult_t pncclReduceScatter(const void* sendbuff, void* recvbuff,
     size_t recvcount, ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm,
-    cudaStream_t stream);
+    hipStream_t stream);
 
-/*
- * All-Gather
+/*! @brief All-Gather
  *
- * Each device gathers sendcount values from other GPUs into recvbuff,
+ * @details Each device gathers sendcount values from other GPUs into recvbuff,
  * receiving data from rank i at offset i*sendcount.
  * Assumes recvcount is equal to nranks*sendcount, which means that recvbuff
  * should have a size of at least nranks*sendcount elements.
@@ -216,15 +235,13 @@ ncclResult_t pncclReduceScatter(const void* sendbuff, void* recvbuff,
  * In-place operations will happen if sendbuff == recvbuff + rank * sendcount.
  */
 ncclResult_t  ncclAllGather(const void* sendbuff, void* recvbuff, size_t sendcount,
-    ncclDataType_t datatype, ncclComm_t comm, cudaStream_t stream);
+    ncclDataType_t datatype, ncclComm_t comm, hipStream_t stream);
 ncclResult_t pncclAllGather(const void* sendbuff, void* recvbuff, size_t sendcount,
-    ncclDataType_t datatype, ncclComm_t comm, cudaStream_t stream);
+    ncclDataType_t datatype, ncclComm_t comm, hipStream_t stream);
 
-/*
- * Send
+/*! @brief Send
  *
- * Send data from sendbuff to rank peer.
- *
+ * @details Send data from sendbuff to rank peer.
  * Rank peer needs to call ncclRecv with the same datatype and the same count from this
  * rank.
  *
@@ -233,15 +250,13 @@ ncclResult_t pncclAllGather(const void* sendbuff, void* recvbuff, size_t sendcou
  * ncclGroupEnd section.
  */
 ncclResult_t  ncclSend(const void* sendbuff, size_t count, ncclDataType_t datatype, int peer,
-    ncclComm_t comm, cudaStream_t stream);
+    ncclComm_t comm, hipStream_t stream);
 ncclResult_t pncclSend(const void* sendbuff, size_t count, ncclDataType_t datatype, int peer,
-    ncclComm_t comm, cudaStream_t stream);
+    ncclComm_t comm, hipStream_t stream);
 
-/*
- * Receive
+/*! @brief Receive
  *
- * Receive data from rank peer into recvbuff.
- *
+ * @details Receive data from rank peer into recvbuff.
  * Rank peer needs to call ncclSend with the same datatype and the same count to this
  * rank.
  *
@@ -250,9 +265,72 @@ ncclResult_t pncclSend(const void* sendbuff, size_t count, ncclDataType_t dataty
  * ncclGroupEnd section.
  */
 ncclResult_t pncclRecv(void* recvbuff, size_t count, ncclDataType_t datatype, int peer,
-    ncclComm_t comm, cudaStream_t stream);
+    ncclComm_t comm, hipStream_t stream);
 ncclResult_t  ncclRecv(void* recvbuff, size_t count, ncclDataType_t datatype, int peer,
-    ncclComm_t comm, cudaStream_t stream);
+    ncclComm_t comm, hipStream_t stream);
+
+/*! @brief Gather
+ *
+ * @details Root device gathers sendcount values from other GPUs into recvbuff,
+ * receiving data from rank i at offset i*sendcount.
+ *
+ * Assumes recvcount is equal to nranks*sendcount, which means that recvbuff
+ * should have a size of at least nranks*sendcount elements.
+ *
+ * In-place operations will happen if sendbuff == recvbuff + rank * sendcount.
+ */
+ncclResult_t  ncclGather(const void* sendbuff, void* recvbuff, size_t sendcount,
+    ncclDataType_t datatype, int root, ncclComm_t comm, hipStream_t stream);
+ncclResult_t pncclGather(const void* sendbuff, void* recvbuff, size_t sendcount,
+    ncclDataType_t datatype, int root, ncclComm_t comm, hipStream_t stream);
+
+/*! @brief Scatter
+ *
+ * @details Scattered over the devices so that recvbuff on rank i will contain the i-th
+ * block of the data on root.
+ *
+ * Assumes sendcount is equal to nranks*recvcount, which means that sendbuff
+ * should have a size of at least nranks*recvcount elements.
+ *
+ * In-place operations will happen if recvbuff == sendbuff + rank * recvcount.
+ */
+ncclResult_t  ncclScatter(const void* sendbuff, void* recvbuff,
+    size_t recvcount, ncclDataType_t datatype, int root, ncclComm_t comm,
+    hipStream_t stream);
+ncclResult_t pncclScatter(const void* sendbuff, void* recvbuff,
+    size_t recvcount, ncclDataType_t datatype, int root, ncclComm_t comm,
+    hipStream_t stream);
+
+/*! @brief All-To-All
+ *
+ * @details Device (i) send (j)th block of data to device (j) and be placed as (i)th
+ * block. Each block for sending/receiving has count elements, which means
+ * that recvbuff and sendbuff should have a size of nranks*count elements.
+ *
+ * In-place operation will happen if sendbuff == recvbuff.
+ */
+ncclResult_t  ncclAllToAll(const void* sendbuff, void* recvbuff, size_t count,
+    ncclDataType_t datatype, ncclComm_t comm, hipStream_t stream);
+ncclResult_t pncclAllToAll(const void* sendbuff, void* recvbuff, size_t count,
+    ncclDataType_t datatype, ncclComm_t comm, hipStream_t stream);
+
+/*! @brief All-To-Allv
+ *
+ * @details Device (i) sends sendcounts[j] of data from offset sdispls[j]
+ * to device (j). In the same time, device (i) receives recvcounts[j] of data
+ * from device (j) to be placed at rdispls[j].
+
+ * sendcounts, sdispls, recvcounts and rdispls are all measured in the units
+ * of datatype, not bytes.
+ *
+ * In-place operation will happen if sendbuff == recvbuff.
+ */
+ncclResult_t  ncclAllToAllv(const void *sendbuff, const size_t sendcounts[],
+    const size_t sdispls[], void *recvbuff, const size_t recvcounts[],
+    const size_t rdispls[], ncclDataType_t datatype, ncclComm_t comm, hipStream_t stream);
+ncclResult_t pncclAllToAllv(const void *sendbuff, const size_t sendcounts[],
+    const size_t sdispls[], void *recvbuff, const size_t recvcounts[],
+    const size_t rdispls[], ncclDataType_t datatype, ncclComm_t comm, hipStream_t stream);
 
 /*
  * Group semantics
@@ -276,8 +354,7 @@ ncclResult_t  ncclRecv(void* recvbuff, size_t count, ncclDataType_t datatype, in
  * concurrent progress of multiple send/receive operations.
  */
 
-/*
- * Group Start
+/*! @brief Group Start
  *
  * Start a group call. All calls to NCCL until ncclGroupEnd will be fused into
  * a single NCCL operation. Nothing will be started on the CUDA stream until
@@ -286,8 +363,7 @@ ncclResult_t  ncclRecv(void* recvbuff, size_t count, ncclDataType_t datatype, in
 ncclResult_t  ncclGroupStart();
 ncclResult_t pncclGroupStart();
 
-/*
- * Group End
+/*! @brief Group End
  *
  * End a group call. Start a fused NCCL operation consisting of all calls since
  * ncclGroupStart. Operations on the CUDA stream depending on the NCCL operations

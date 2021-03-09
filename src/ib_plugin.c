@@ -14,6 +14,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "nccl.h"
 #include "nccl_net.h"
 #include "p2p_plugin.h"
@@ -105,12 +106,16 @@ struct ncclIbListenComm {
 };
 
 struct ncclIbSendFifo {
-  uint64_t addr;
-  int      size;
-  uint32_t seq;
-  uint32_t rkey;
-  uint32_t ready;
-  uint64_t pad[1]; // Pad FIFO element size to be 32-bytes
+  union {
+    struct {
+      uint64_t addr;
+      int      size;
+      uint32_t seq;
+      uint32_t rkey;
+      uint32_t ready;
+      };
+    char pad[64]; // Pad FIFO element size to be 64-bytes
+  };
 };
 
 struct ncclIbSendComm {
@@ -466,7 +471,7 @@ ncclResult_t ncclIbIsend(void* sendComm, void* data, int size, void* mhandle, vo
   // Wait for the receiver to have posted the corresponding receive
   volatile struct ncclIbSendFifo* slot = comm->fifo + (comm->fifoHead%MAX_REQUESTS);
   volatile uint32_t * readyPtr = &slot->ready;
-  if (*readyPtr == 0) { *request = NULL; return ncclSuccess; }
+  if (LOAD(readyPtr) == 0) { *request = NULL; return ncclSuccess; }
 
   struct ncclIbRequest* req;
   NCCLCHECK(ncclIbGetRequest(&comm->verbs, &req));
@@ -492,9 +497,9 @@ ncclResult_t ncclIbIsend(void* sendComm, void* data, int size, void* mhandle, vo
   __sync_synchronize(); // order the readyPtr load against rkey load below
   // Sanity checks to catch user collective call count/size mismatches
   // plus any potential programming errors
-  if (size > slot->size || slot->size < 0 || slot->addr == 0 || slot->rkey == 0 || slot->seq != comm->fifoHead) {
+  if (size > LOAD(&slot->size) || LOAD(&slot->size) <= 0 || LOAD(&slot->addr) == 0 || LOAD(&slot->rkey) == 0 || LOAD(&slot->seq) != comm->fifoHead) {
     WARN("NET/IB : collective mismatch error local size %d remote %d addr %lx rkey %x seq %x/%x",
-        size, slot->size, slot->addr, slot->rkey, slot->seq, comm->fifoHead);
+        size, LOAD(&slot->size), LOAD(&slot->addr), LOAD(&slot->rkey), LOAD(&slot->seq), comm->fifoHead);
     return ncclInternalError;
   }
   int useAr = 0;
@@ -503,16 +508,16 @@ ncclResult_t ncclIbIsend(void* sendComm, void* data, int size, void* mhandle, vo
   }
   wr.opcode = useAr ? IBV_WR_RDMA_WRITE : IBV_WR_RDMA_WRITE_WITH_IMM;
   wr.send_flags = useAr ? 0 : IBV_SEND_SIGNALED;
-  wr.wr.rdma.remote_addr = slot->addr;
-  wr.wr.rdma.rkey = slot->rkey;
+  wr.wr.rdma.remote_addr = LOAD(&slot->addr);
+  wr.wr.rdma.rkey = LOAD(&slot->rkey);
   wr.imm_data = size; // Send the message size via imm_data
   __sync_synchronize();
 #endif
   // We must clear slot->ready, but reset other fields to aid
   // debugging and sanity checks
-  slot->ready = 0;
-  slot->addr = 0ULL;
-  slot->rkey = slot->size = slot->seq = 0;
+  STORE(&slot->ready, 0);
+  STORE(&slot->addr, 0);
+  STORE(&slot->rkey, 0); STORE(&slot->size, 0); STORE(&slot->seq, 0);
   comm->fifoHead++;
 
   struct ibv_send_wr* bad_wr;

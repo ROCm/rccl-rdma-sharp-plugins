@@ -11,7 +11,6 @@
 
 #ifndef NCCL_IBVWRAP_H_
 #define NCCL_IBVWRAP_H_
-#include "config.h"
 #include "core.h"
 #include <infiniband/verbs.h>
 

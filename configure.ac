@@ -21,6 +21,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_GNU_SOURCE
 AC_CONFIG_HEADERS([config.h])
 
+LT_INIT
 RPM_RELEASE=1
 MAJOR_VERSION=nccl_rdma_sharp_plugins_ver_major
 MINOR_VERSION=nccl_rdma_sharp_plugins_ver_minor
@@ -55,18 +56,19 @@ else
 	CFLAGS="$CFLAGS -O3 -DNDEBUG -Werror"
 fi
 
-#check for cuda
-AC_ARG_WITH([cuda],
-            [AC_HELP_STRING([--with-cuda=PATH],
-            [Path to non-standard CUDA installation])],
-            [AS_IF([test -d $withval/lib64], [cuda_libdir="lib64"], [cuda_libdir="lib"])
+#check for hip
+AC_DEFINE([__HIP_PLATFORM_HCC__], [], [Use HCC Platform])
+AC_ARG_WITH([hip],
+            [AC_HELP_STRING([--with-hip=PATH],
+            [Path to non-standard HIP installation])],
+            [AS_IF([test -d $withval/lib64], [hip_libdir="lib64"], [hip_libdir="lib"])
              CFLAGS="-I$withval/include $CFLAGS"
-             LDFLAGS="-L$withval/$cuda_libdir $LDFLAGS"],
-            [CFLAGS="-I/usr/local/cuda/include $CFLAGS"
-             LDFLAGS="-L/usr/local/cuda/$cuda_libdir $LDFLAGS"])
+             LDFLAGS="-L$withval/$hip_libdir $LDFLAGS"],
+            [CFLAGS="-I/opt/rocm/include $CFLAGS"
+             LDFLAGS="-L/opt/rocm/lib $LDFLAGS"])
 
-AC_CHECK_HEADER(       [cuda_runtime.h], [], [AC_MSG_FAILURE([CUDA runtime header files not found])])
-AC_CHECK_LIB([cudart], [cudaMalloc],     [], [AC_MSG_FAILURE([CUDA runtime libs not found])])
+AC_CHECK_HEADER(       [hip/hip_runtime.h], [], [AC_MSG_FAILURE([HIP runtime header files not found])])
+AC_CHECK_LIB([amdhip64], [hipMalloc],     [], [AC_MSG_FAILURE([HIP runtime libs not found])])
 
 #check for verbs
 AC_ARG_WITH([verbs],

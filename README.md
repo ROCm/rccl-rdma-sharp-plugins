@@ -1,23 +1,23 @@
-# nccl-rdma-sharp-plugins
+# rccl-rdma-sharp-plugins
 
-nccl-rdma-sharp plugin enables RDMA and Switch based collectives(SHARP)
-with [NVIDIA's NCCL](https://github.com/NVIDIA/nccl) library
+rccl-rdma-sharp plugin enables RDMA and Switch based collectives(SHARP)
+with [AMD's RCCL](https://github.com/ROCmSoftwarePlatform/rccl) library
 
 ## Overview
 
 ## Requirements
 
 * MOFED
-* CUDA
+* HIP
 * SHARP
-* NCCL
+* RCCL
 * GPUDirectRDMA plugin
 
 ## Build Instructions
 
 ### build system requirements
 
-* CUDA
+* HIP
 * SHARP
 * MOFED
 
@@ -37,7 +37,7 @@ The following flags enabled to build with custom dependencies
 ```
   --with-verbs=PATH       Path to non-standard libibverbs installation
   --with-sharp=PATH       Path to non-standard SHARP installation
-  --with-cuda=PATH        Path to non-standard CUDA installation
+  --with-hip=PATH        Path to non-standard HIP installation
 ```
 
 

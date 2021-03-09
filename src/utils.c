@@ -5,6 +5,7 @@
  ************************************************************************/
 
 #define _GNU_SOURCE
+#include "config.h"
 #include "utils.h"
 #include "core.h"
 #include <unistd.h>
@@ -113,6 +114,7 @@ static size_t readFileVarArg(char *buffer, size_t max,
 
 out_close:
   close(fd);
+  return read_bytes;
 }
 
 int readFileNumber(long *value, const char *filename_fmt, ...)

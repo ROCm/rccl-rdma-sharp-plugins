@@ -10,6 +10,14 @@
 #include "nccl.h"
 #include <stdint.h>
 
+#if defined(__HIP_PLATFORM_HCC__) || defined(__HCC__) || defined(__HIPCC__)
+#define LOAD(VAR) __atomic_load_n((VAR), __ATOMIC_SEQ_CST)
+#define STORE(DST, SRC) __atomic_store_n((DST), (SRC), __ATOMIC_SEQ_CST)
+#else
+#define LOAD(VAR) *(VAR)
+#define STORE(DST, SRC) *(DST) = (SRC)
+#endif
+
 #define NCCL_STATIC_ASSERT(_cond, _msg) \
     switch(0) {case 0:case (_cond):;}
 

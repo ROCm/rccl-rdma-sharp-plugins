@@ -5,6 +5,7 @@
  ************************************************************************/
 
 #include <stdint.h>
+#include "config.h"
 #include "ibvwrap.h"
 #include "nccl.h"
 
