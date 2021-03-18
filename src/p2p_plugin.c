@@ -1,6 +1,7 @@
 /*************************************************************************
  * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
  * Copyright (C) 2019-2020, Mellanox Technologies Ltd. All rights reserved.
+ * Modifications Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
  *
  * See LICENSE.txt for license information
  ************************************************************************/

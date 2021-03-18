@@ -1,6 +1,7 @@
 /*************************************************************************
  * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
  * Copyright (C) 2019-2020, Mellanox Technologies Ltd. All rights reserved.
+ * Modifications Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
  *
  * See LICENSE.txt for license information
  ************************************************************************/
@@ -49,11 +50,11 @@ static int ncclNIbDevs = -1;
  * If request == REQUEST_COMPLETED_ZERO_LENGTGH:
  *  ucp_send or ucp_recv was completed immediately and worker progress is not needed
  *  message size == 0 and gpu flush is not needed
- * 
+ *
  * If request == REQUEST_COMPLETED_NON_ZERO_LENGTH:
  *  ucp_send or ucp_recv was completed immediately and worker progres is not needed
  *  message size > 0 and gpu flush is needed
- * 
+ *
  * If request != REQUEST_COMPLETED_ZERO_LENGTGH and request != REQUEST_COMPLETED_NON_ZERO_LENGTH:
  *  normal ucp request.
  */
@@ -85,7 +86,7 @@ pthread_mutex_t nccl_ucx_lock = PTHREAD_MUTEX_INITIALIZER;
  */
 typedef struct ucx_listen_handle {
   union socketAddress connectAddr; /* reciever socket address */
-  ucp_tag_t           tag;         /* tag that is used to distiguish data that was sent to 
+  ucp_tag_t           tag;         /* tag that is used to distiguish data that was sent to
                                       this reciever. Required when shared worker is used. */
 } ucx_listen_handle_t;
 
@@ -99,7 +100,7 @@ typedef struct ucx_listen_comm {
   ucp_context_h ctx;    /* ucp_context associated with specific device dev */
   ucp_worker_h  worker; /* ucx_worker created on ctx, worker can be shared between
                            multiple connections */
-  ucp_tag_t     tag;    /* tag that is used to distiguish data that was sent to 
+  ucp_tag_t     tag;    /* tag that is used to distiguish data that was sent to
                            this reciever. Required when shared worker is used.*/
 } ucx_listen_comm_t;
 
@@ -394,7 +395,7 @@ ncclResult_t nccl_ucx_listen(int dev, void *handle, void **listen_comm) {
   comm->dev = dev;
   my_handle->tag = comm->tag;
   *listen_comm = comm;
- 
+
   return ncclSuccess;
 }
 
@@ -450,7 +451,7 @@ ncclResult_t nccl_ucx_accept(void *listen_comm, void **recv_comm) {
   UCXCHECK(ucp_ep_create(r_comm->worker, &ep_params, &r_comm->ep));
   NCCLCHECK(socketRecv(r_comm->fd, &r_comm->ctag, sizeof(ucp_tag_t)));
 
-  r_comm->gpuFlush.enabled = (nccl_p2p_gdr_support(l_comm->dev) == ncclSuccess);  
+  r_comm->gpuFlush.enabled = (nccl_p2p_gdr_support(l_comm->dev) == ncclSuccess);
   if (r_comm->gpuFlush.enabled) {
     ucp_address_t *my_addr;
     size_t        local_addr_len;
@@ -477,20 +478,20 @@ ncclResult_t nccl_ucx_regmr(void* comm, void* data, int size, int type, void** m
   uint64_t             reg_addr, reg_size;
   size_t               rkey_buf_size;
   void                 *rkey_buf;
-  
+
   NCCLCHECK(ncclIbMalloc((void**)&mh, sizeof(ucx_mhandle_t)));
   reg_addr = addr & (~(REG_ALIGN - 1));
   reg_size = addr + size - reg_addr;
   reg_size = ROUNDUP(reg_size, REG_ALIGN);
 
   mmap_params.field_mask = UCP_MEM_MAP_PARAM_FIELD_ADDRESS |
-                           UCP_MEM_MAP_PARAM_FIELD_LENGTH; 
+                           UCP_MEM_MAP_PARAM_FIELD_LENGTH;
   mmap_params.address    = (void*)reg_addr;
-  mmap_params.length     = reg_size;  
+  mmap_params.length     = reg_size;
   mh->mem_type = type;
 #if UCP_API_VERSION >= UCP_VERSION(1, 10)
   mh->mem_type = (type == NCCL_PTR_HOST)? UCS_MEMORY_TYPE_HOST: UCS_MEMORY_TYPE_CUDA;
-  mmap_params.field_mask  |= UCP_MEM_MAP_PARAM_FIELD_MEMORY_TYPE; 
+  mmap_params.field_mask  |= UCP_MEM_MAP_PARAM_FIELD_MEMORY_TYPE;
   mmap_params.memory_type = mh->mem_type;
 #endif
 
@@ -500,7 +501,7 @@ ncclResult_t nccl_ucx_regmr(void* comm, void* data, int size, int type, void** m
     UCXCHECK(ucp_ep_rkey_unpack(ctx->gpuFlush.flush_ep, rkey_buf, &mh->rkey));
     ucp_rkey_buffer_release(rkey_buf);
   }
-  
+
   *mhandle = mh;
   return ncclSuccess;
 }
@@ -650,7 +651,7 @@ ncclResult_t nccl_ucx_irecv(void *recv_comm, void *data, int size, void *mhandle
       *request = NULL;
       return ncclSuccess;
     }
-  }  
+  }
 
 #if UCP_API_VERSION >= UCP_VERSION(1, 10)
   ucp_request_param_t params;
@@ -754,7 +755,7 @@ ncclResult_t nccl_ucx_close_send(void *send_comm) {
 
   if (send_comm){
     ucx_send_comm_t *comm = (ucx_send_comm_t*) send_comm;
-    
+
     if (comm->ep) {
       close_req = ucp_ep_close_nb(comm->ep, UCP_EP_CLOSE_MODE_FLUSH);
       wait_close(comm->worker, close_req);
@@ -782,12 +783,12 @@ ncclResult_t nccl_ucx_close_recv(void *recv_comm) {
       close_req = ucp_ep_close_nb(comm->ep, UCP_EP_CLOSE_MODE_FLUSH);
       wait_close(comm->worker, close_req);
       int close=1;
-      NCCLCHECK(socketSend(comm->fd, &close, sizeof(int)));  
+      NCCLCHECK(socketSend(comm->fd, &close, sizeof(int)));
     }
     nccl_ucx_free_worker(comm->worker);
     free(comm);
   }
-  
+
   return ncclSuccess;
 }
 
@@ -798,7 +799,7 @@ ncclResult_t nccl_ucx_close_listen(void *listen_comm) {
     close(comm->fd);
     free(comm);
   }
-  
+
   return ncclSuccess;
 }
 

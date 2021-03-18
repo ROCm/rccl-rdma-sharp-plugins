@@ -1,5 +1,6 @@
 #
 # Copyright (C) Mellanox Technologies Ltd. 2019.  ALL RIGHTS RESERVED.
+# Modifications Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
 #
 # See file LICENSE for terms.
 #

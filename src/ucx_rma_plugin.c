@@ -1,8 +1,8 @@
 /*************************************************************************
- *  * Copyright (c) 2016-2020, NVIDIA CORPORATION. All rights reserved.
- *   *
- *    * See LICENSE.txt for license information
- *     ************************************************************************/
+ * Copyright (c) 2016-2020, NVIDIA CORPORATION. All rights reserved.
+ * Modifications Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
+ * See LICENSE.txt for license information
+ *************************************************************************/
 
 #include <pthread.h>
 #include <stdint.h>
@@ -380,9 +380,9 @@ ncclResult_t nccl_ucx_rma_listen(int dev, void *handle, void **listen_comm)
   NCCLCHECK(get_socket_addr(&(my_handle->connectAddr)));
   NCCLCHECK(createListenSocket(&comm->fd, &my_handle->connectAddr));
 
-  comm->dev = dev; 
+  comm->dev = dev;
   *listen_comm = comm;
- 
+
   return ncclSuccess;
 }
 
@@ -391,7 +391,7 @@ static ucs_status_t nccl_ucx_rma_am_rkey_cb(void *arg, void *data, size_t length
 {
   nccl_ucx_rma_send_comm_t *comm     = (nccl_ucx_rma_send_comm_t*)arg;
   nccl_ucx_rma_rkey_buf_t  *rkey_buf = (nccl_ucx_rma_rkey_buf_t*)data;
-  
+
   if (comm->rkeys[rkey_buf->index].rkey) {
     ucp_rkey_destroy(comm->rkeys[rkey_buf->index].rkey);
   }
@@ -499,7 +499,7 @@ ncclResult_t nccl_ucx_rma_accept(void *listen_comm, void **recv_comm)
   struct sockaddr_in         sockaddr;
   void                       *rkey_buf;
   size_t                     rkey_buf_size;
- 
+
   NCCLCHECK(ncclIbMalloc((void**)&comm, sizeof(nccl_ucx_rma_recv_comm_t)));
   SYSCHECKVAL(accept(l_comm->fd, (struct sockaddr*)&sockaddr, &socklen),
               "accept", comm->super.fd);
@@ -559,7 +559,7 @@ ncclResult_t nccl_ucx_rma_regmr(void* comm, void* data, int size, int type,
   uint64_t             reg_addr, reg_size;
   void                 *rkey_buf;
   int                  i;
-  
+
   for (i = 0; i < NCCL_UCX_RMA_MAX_MHANDLES; i++) {
     if (ctx->mh[i] == NULL) {
       break;
@@ -576,13 +576,13 @@ ncclResult_t nccl_ucx_rma_regmr(void* comm, void* data, int size, int type,
   reg_size = ROUNDUP(reg_size, REG_ALIGN);
 
   mmap_params.field_mask = UCP_MEM_MAP_PARAM_FIELD_ADDRESS |
-                           UCP_MEM_MAP_PARAM_FIELD_LENGTH; 
+                           UCP_MEM_MAP_PARAM_FIELD_LENGTH;
   mmap_params.address    = (void*)reg_addr;
-  mmap_params.length     = reg_size;  
+  mmap_params.length     = reg_size;
   mh->mem_type = type;
 #if UCP_API_VERSION >= UCP_VERSION(1, 10)
   mh->mem_type = (type == NCCL_PTR_HOST)? UCS_MEMORY_TYPE_HOST: UCS_MEMORY_TYPE_CUDA;
-  mmap_params.field_mask  |= UCP_MEM_MAP_PARAM_FIELD_MEMORY_TYPE; 
+  mmap_params.field_mask  |= UCP_MEM_MAP_PARAM_FIELD_MEMORY_TYPE;
   mmap_params.memory_type = mh->mem_type;
 #endif
 
@@ -600,7 +600,7 @@ ncclResult_t nccl_ucx_rma_regmr(void* comm, void* data, int size, int type,
   if (ctx->gpuFlush.enabled) {
     UCXCHECK(ucp_ep_rkey_unpack(ctx->gpuFlush.flush_ep, rkey_buf, &mh->rkey));
   }
-  
+
   mh->rkey_buf.index = i;
   mh->rkey_buf.send  = 0;
   mh->rkey_buf.id    = ctx->num_mh;
@@ -712,7 +712,7 @@ static ncclResult_t nccl_ucx_rma_send_check(nccl_ucx_rma_send_comm_t *comm)
     st = ucp_request_check_status(comm->super.check_req);
     if (st != UCS_INPROGRESS) {
       ucp_request_free(comm->super.check_req);
-      comm->super.ready = NCCL_UCX_RMA_SCOMM_READY; 
+      comm->super.ready = NCCL_UCX_RMA_SCOMM_READY;
       NCCLCHECK(socketSend(comm->super.fd, &comm->super.ready, sizeof(int)));
     }
   }
@@ -725,7 +725,7 @@ static ncclResult_t nccl_ucx_rma_send_check(nccl_ucx_rma_send_comm_t *comm)
  * communication and consists of multiple stages:
  */
 enum {
-  NCCL_UCX_RMA_RCOMM_SEND_CONN_INFO = 0, /* initial stage, send worker address to peer */ 
+  NCCL_UCX_RMA_RCOMM_SEND_CONN_INFO = 0, /* initial stage, send worker address to peer */
   NCCL_UCX_RMA_RCOMM_WAIT_SCOMM,         /* wait for send communicator ready notification */
   NCCL_UCX_RMA_RCOMM_READY,              /* recv comm ready */
 };
@@ -757,7 +757,7 @@ static ncclResult_t nccl_ucx_rma_recv_check(nccl_ucx_rma_recv_comm_t *comm)
     } else {
       WARN("Unexpected socket msg %d (%d)", rem_comm_state, NCCL_UCX_RMA_SCOMM_READY);
       return ncclSystemError;
-    }    
+    }
   }
 
   return ncclSuccess;
@@ -829,7 +829,7 @@ ncclResult_t nccl_ucx_rma_isend(void *send_comm, void *data, int size,
     req_param.memory_type  =  mh->mem_type;
   }
 #endif
-  
+
   st  = ucp_put_nbx(comm->ep, data, size, slot->addr,
                     comm->rkeys[*rkey_index].rkey,
                     &req_param);
@@ -933,7 +933,7 @@ ncclResult_t nccl_ucx_rma_irecv(void *recv_comm, void *data, int size,
     *request = NULL;
     return ncclSuccess;
   }
-  
+
   NCCLCHECK(ucx_rma_get_request(comm->super.reqs, &req_id));
   req = &comm->super.reqs[req_id];
 
@@ -1064,11 +1064,11 @@ ncclResult_t nccl_ucx_rma_close_recv(void *recv_comm)
       close_req = ucp_ep_close_nb(comm->ep, UCP_EP_CLOSE_MODE_FLUSH);
       wait_close(comm->super.worker, close_req);
     }
-    NCCLCHECK(socketSend(comm->super.fd, &close, sizeof(int)));  
+    NCCLCHECK(socketSend(comm->super.fd, &close, sizeof(int)));
     nccl_ucx_free_worker(comm->super.worker);
     free(comm);
   }
-  
+
   return ncclSuccess;
 }
 
@@ -1080,7 +1080,7 @@ ncclResult_t nccl_ucx_rma_close_listen(void *listen_comm)
     close(comm->fd);
     free(comm);
   }
-  
+
   return ncclSuccess;
 }
 
