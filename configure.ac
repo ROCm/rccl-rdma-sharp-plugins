@@ -8,10 +8,10 @@ AC_PREREQ([2.63])
 
 AC_COPYRIGHT([Copyright (C) 2019 Mellanox Technologies Ltd. All rights reserved.])
 
-define([nccl_rdma_sharp_plugins_ver_major], 1)
-define([nccl_rdma_sharp_plugins_ver_minor], 0)
+define([rccl_rdma_sharp_plugins_ver_major], 1)
+define([rccl_rdma_sharp_plugins_ver_minor], 0)
 
-AC_INIT([nccl-rdma-sharp-plugins], [nccl_rdma_sharp_plugins_ver_major.nccl_rdma_sharp_plugins_ver_minor], [support@mellanox.com], [],[http://github.com/Mellanox/nccl-rdma-sharp-plugins])
+AC_INIT([rccl-rdma-sharp-plugins], [rccl_rdma_sharp_plugins_ver_major.rccl_rdma_sharp_plugins_ver_minor], [rccl-maintainer@amd.com], [],[https://github.com/ROCmSoftwarePlatform/rccl-rdma-sharp-plugins])
 
 AM_INIT_AUTOMAKE([1.10 foreign tar-ustar subdir-objects])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -24,8 +24,8 @@ AC_CONFIG_HEADERS([config.h])
 
 LT_INIT
 RPM_RELEASE=1
-MAJOR_VERSION=nccl_rdma_sharp_plugins_ver_major
-MINOR_VERSION=nccl_rdma_sharp_plugins_ver_minor
+MAJOR_VERSION=rccl_rdma_sharp_plugins_ver_major
+MINOR_VERSION=rccl_rdma_sharp_plugins_ver_minor
 VERSION=$MAJOR_VERSION.$MINOR_VERSION
 
 AC_SUBST(RPM_RELEASE)
@@ -104,12 +104,10 @@ AC_CHECK_HEADERS([limits.h stdlib.h string.h unistd.h], [],
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 nccl-rdma-sharp-plugins.spec
-                 nccl-rdma-sharp-plugins.pc
+                 rccl-rdma-sharp-plugins.spec
+                 rccl-rdma-sharp-plugins.pc
                  debian/changelog
                  debian/control
-                 debian/nccl-rdma-sharp-plugins.postinst
-                 debian/nccl-rdma-sharp-plugins.prem
                  debian/rules
                 ])
 AC_OUTPUT

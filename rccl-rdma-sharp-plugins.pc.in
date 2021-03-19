@@ -4,7 +4,7 @@ libdir = @libdir@
 
 Name: @PACKAGE@
 URL: @PACKAGE_URL@
-Description:  RDMA and SHARP plugins for NCCL Collective library
+Description:  RDMA and SHARP plugins for RCCL Collective library
 Version: @MAJOR_VERSION@.@MINOR_VERSION@
-Libs: -L${libdir} -lnccl-net.so
+Libs: -L${libdir} -lrccl-net.so
 

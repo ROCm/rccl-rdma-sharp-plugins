@@ -1,6 +1,0 @@
-#!/bin/sh
-set -e
-if [ @prefix@ != /usr/lib/pkgconfig ];then
-    install -m 755 @prefix@/lib/pkgconfig/nccl-rdma-sharp-plugins.pc /usr/lib/pkgconfig/nccl-rdma-sharp-plugins.pc
-fi
-

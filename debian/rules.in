@@ -12,8 +12,9 @@
 %:
 	dh $@ 
 
+override_dh_usrlocal:
+
 override_dh_auto_configure:
-	contrib/configure-release
 	chmod +x debian/rules
 
 override_dh_shlibdeps:

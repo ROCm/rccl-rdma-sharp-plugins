@@ -11,7 +11,6 @@ with [AMD's RCCL](https://github.com/ROCmSoftwarePlatform/rccl) library
 * HIP
 * SHARP
 * RCCL
-* GPUDirectRDMA plugin
 
 ## Build Instructions
 

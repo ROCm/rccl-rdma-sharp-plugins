@@ -14,7 +14,7 @@
 %global lt_version @LT_CURRENT@.@LT_REVISION@.@LT_AGE@
 
 Name: %{pkgname}
-Summary: RDMA and SHARP plugins for NCCL
+Summary: RDMA and SHARP plugins for RCCL
 Version: %{version}
 Release: %{rel}
 
@@ -32,14 +32,14 @@ BuildRequires: valgrind-devel
 %endif
 
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-URL: http://www.mellanox.com
+URL: http://www.amd.com
 Prefix: %{prefix}
-Provides: nccl-rdma-sharp-plugins
-Vendor: mellanox
+Provides: rccl-rdma-sharp-plugins
+Vendor: AMD
 
 
 %description
-Provides RDMA and SHARP plugins for NCCL Collective library
+Provides RDMA and SHARP plugins for RCCL Collective library
 
 %prep
 rm -rf $RPM_BUILD_ROOT
@@ -64,9 +64,9 @@ chmod +x find-requires.sh
 
 make DESTDIR="$RPM_BUILD_ROOT" install
 mkdir -p $RPM_BUILD_ROOT/etc/ld.so.conf.d/
-echo %{_libdir} > $RPM_BUILD_ROOT/etc/ld.so.conf.d/nccl-rdma-sharp-plugins.conf
+echo %{_libdir} > $RPM_BUILD_ROOT/etc/ld.so.conf.d/rccl-rdma-sharp-plugins.conf
 mkdir -p $RPM_BUILD_ROOT/usr/lib64/pkgconfig
-cp nccl-rdma-sharp-plugins.pc $RPM_BUILD_ROOT/usr/lib64/pkgconfig
+cp rccl-rdma-sharp-plugins.pc $RPM_BUILD_ROOT/usr/lib64/pkgconfig
 
 %clean
 # We may be in the directory that we're about to remove, so cd out of
@@ -83,8 +83,8 @@ test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-, root, root)
 %{prefix}
-/etc/ld.so.conf.d/nccl-rdma-sharp-plugins.conf
-/usr/lib64/pkgconfig/nccl-rdma-sharp-plugins.pc
+/etc/ld.so.conf.d/rccl-rdma-sharp-plugins.conf
+/usr/lib64/pkgconfig/rccl-rdma-sharp-plugins.pc
 
 
 # Your application file list goes here

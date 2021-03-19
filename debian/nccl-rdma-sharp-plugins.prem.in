@@ -1,7 +1,0 @@
-#!/bin/sh
-
-PCF=/usr/lib/pkgconfig/nccl-rdma-sharp-plugins.pc
-
-if [ -f $PCF ];then
-    rm -f $PCF
-fi

@@ -4,7 +4,7 @@
 # See file LICENSE for terms.
 #
 
-PACKAGE=nccl-rdma-sharp-plugins
+PACKAGE=rccl-rdma-sharp-plugins
 WS=$PWD
 rpmspec=${PACKAGE}.spec
 rpmmacros="--define='_rpmdir ${WS}/rpm-dist' --define='_srcrpmdir ${WS}/rpm-dist' --define='_sourcedir ${WS}' --define='_specdir ${WS}' --define='_builddir ${WS}'"
