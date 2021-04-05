@@ -18,7 +18,7 @@ Summary: RDMA and SHARP plugins for RCCL
 Version: %{version}
 Release: %{rel}
 
-License: Proprietary
+License: BSD 3-Clause
 Group: Applications
 Source: %{pkgname}-%{version}.tar.gz
 Requires: libibverbs
@@ -47,7 +47,7 @@ rm -rf $RPM_BUILD_ROOT
 %setup -q
 
 %build
-./configure 
+./configure
 make %{?_smp_mflags}
 
 %install
