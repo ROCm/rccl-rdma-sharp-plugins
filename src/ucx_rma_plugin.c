@@ -396,9 +396,8 @@ static ucs_status_t nccl_ucx_rma_am_rkey_cb(void *arg, void *data, size_t length
     ucp_rkey_destroy(comm->rkeys[rkey_buf->index].rkey);
   }
   comm->rkeys[rkey_buf->index].id = rkey_buf->id;
-  UCXCHECK(ucp_ep_rkey_unpack(comm->ep, rkey_buf->buf,
-                              &comm->rkeys[rkey_buf->index].rkey));
-  return UCS_OK;
+  return ucp_ep_rkey_unpack(comm->ep, rkey_buf->buf,
+                              &comm->rkeys[rkey_buf->index].rkey);
 }
 
 

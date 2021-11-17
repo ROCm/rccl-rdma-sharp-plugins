@@ -93,6 +93,8 @@ ncclResult_t pluginInit(ncclDebugLogger_t logFunction)
       NCCL_PLUGIN_SYMBOL = ucxRmaPlugin;
       break;
 #endif
+    default:
+      break;
   }
   INFO(NCCL_INIT|NCCL_NET, "P2P plugin %s", NCCL_PLUGIN_SYMBOL.name);
 
