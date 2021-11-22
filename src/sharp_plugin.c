@@ -24,6 +24,7 @@
 
 extern ncclNet_t NCCL_PLUGIN_SYMBOL;
 int ncclNSharpDevs = -1;
+NCCL_PARAM(SharpGroupSizeThresh, "SHARP_GROUP_SIZE_THRESH", 2);
 
 enum ncclSharpRequestType {
   NCCL_SHARP_REQ_SHARP_COLL,
@@ -181,6 +182,8 @@ ncclResult_t ncclSharpInit(ncclDebugLogger_t logFunction) {
 
   /* set SHARP COLL library default for plugin */
   setenv("SHARP_COLL_ENABLE_SAT", "1", 0);
+  setenv("SHARP_COLL_NUM_COLL_GROUP_RESOURCE_ALLOC_THRESHOLD", "0", 0);
+  setenv("SHARP_COLL_LOCK_ON_COMM_INIT", "1", 0);
   setenv("SHARP_COLL_LOG_LEVEL", "3", 0);
 
   return NCCL_PLUGIN_SYMBOL.init(logFunction);
@@ -209,6 +212,22 @@ ncclResult_t ncclSharpListen(int dev, void* opaqueHandle, void** listenComm) {
 ncclResult_t ncclSharpConnect(void* handles[], int nranks, int rank, void* listenComm, void** collComm) {
   struct ncclSharpListenComm* lComm = (struct ncclSharpListenComm*)listenComm;
   struct ncclSharpCollComm* cComm;
+  char *useSharp;
+
+  if(nranks < ncclParamSharpGroupSizeThresh()) {
+    INFO(NCCL_INIT|NCCL_NET|NCCL_ENV, "SHARP: Group size:%d is less than threshold:%d. fallback to non-sharp",
+         nranks, ncclParamSharpGroupSizeThresh());
+    return ncclInvalidUsage;
+  }
+
+  useSharp = getenv("NCCL_SHARP_DISABLE");
+  if(useSharp != NULL) {
+    if(strcmp(useSharp, "1") == 0) {
+      INFO(NCCL_INIT|NCCL_NET|NCCL_ENV, "SHARP: Set to disable on this communicator");
+      return ncclInvalidUsage;
+    }
+  }
+
   NCCLCHECK(ncclIbMalloc((void**)&cComm, sizeof(struct ncclSharpCollComm)));
   NCCLCHECK(ncclIbMalloc((void**)&cComm->reqs, sizeof(struct ncclSharpRequest)*MAX_REQUESTS));
 
@@ -280,7 +299,8 @@ ncclResult_t ncclSharpConnect(void* handles[], int nranks, int rank, void* liste
 
   ret = sharp_coll_comm_init(cComm->sharpCollContext, &comm_spec, &cComm->sharpCollComm);
   if (ret < 0) {
-    WARN("SHARP group create failed: %s(%d)\n", sharp_coll_strerror(ret), ret);
+    WARN("SHARP group create: %s(%d)\n", sharp_coll_strerror(ret), ret);
+    sharp_coll_finalize(cComm->sharpCollContext);
     return ncclInternalError;
   }
 
