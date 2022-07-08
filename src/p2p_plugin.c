@@ -108,6 +108,15 @@ ncclResult_t nccl_p2p_gdr_support(int dev)
   if (module_loaded == -1) {
 #if defined(__HIP_PLATFORM_HCC__) || defined(__HCC__) || defined(__HIPCC__)
     module_loaded = (access("/sys/kernel/mm/memory_peers/amdkfd/version", F_OK) == -1) ? 0 : 1;
+    #define MAX_STR_LEN 255
+    char strValue[MAX_STR_LEN];
+    readFileString(strValue, MAX_STR_LEN, "/sys/devices/virtual/dmi/id/bios_version");
+    if (strncmp("Hyper-V UEFI Release", strValue, 20) == 0) {
+      char* str = getenv("NCCL_IB_PCI_RELAXED_ORDERING");
+      readFileString(strValue, MAX_STR_LEN, "/proc/sys/kernel/numa_balancing");
+      if (strtoll(strValue, NULL, 0) == 1 && (!str || strtoll(str, NULL, 0) == 0))
+        module_loaded = 0;
+    }
 #else
     module_loaded = (access("/sys/kernel/mm/memory_peers/nv_mem/version", F_OK) == -1) ? 0 : 1;
 #endif
