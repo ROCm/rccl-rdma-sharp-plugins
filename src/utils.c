@@ -155,3 +155,27 @@ const char *get_plugin_lib_path()
 
   return dl_info.dli_fname;
 }
+
+size_t readFileString(char *buffer, size_t max, const char *filename)
+{
+  ssize_t read_bytes;
+  int fd;
+
+  fd = open(filename, O_RDONLY);
+  if (fd < 0) {
+    return -1;
+  }
+
+  read_bytes = read(fd, buffer, max - 1);
+  if (read_bytes < 0) {
+    return -1;
+  }
+
+  if (read_bytes < max) {
+    buffer[read_bytes] = '\0';
+  }
+
+out_close:
+  close(fd);
+  return read_bytes;
+}
