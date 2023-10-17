@@ -58,7 +58,7 @@ else
 fi
 
 #check for hip
-AC_DEFINE([__HIP_PLATFORM_HCC__], [], [Use HCC Platform])
+AC_DEFINE([__HIP_PLATFORM_AMD__], [], [Use AMD Platform])
 AC_ARG_WITH([hip],
             [AC_HELP_STRING([--with-hip=PATH],
             [Path to non-standard HIP installation])],

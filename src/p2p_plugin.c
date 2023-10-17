@@ -106,7 +106,7 @@ ncclResult_t nccl_p2p_gdr_support(int dev)
   static int module_loaded = -1;
 
   if (module_loaded == -1) {
-#if defined(__HIP_PLATFORM_HCC__) || defined(__HCC__) || defined(__HIPCC__)
+#if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)
     module_loaded = (access("/sys/kernel/mm/memory_peers/amdkfd/version", F_OK) == -1) ? 0 : 1;
     #define MAX_STR_LEN 255
     char strValue[MAX_STR_LEN];
