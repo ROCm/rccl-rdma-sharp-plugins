@@ -1,7 +1,7 @@
 # rccl-rdma-sharp-plugins
 
 rccl-rdma-sharp plugin enables RDMA and Switch based collectives(SHARP)
-with [AMD's RCCL](https://github.com/ROCmSoftwarePlatform/rccl) library
+with [AMD's RCCL](https://github.com/ROCm/rccl) library
 
 ## Overview
 
